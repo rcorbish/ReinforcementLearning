@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pybullet as p
 import time
 import pybullet_data
@@ -8,8 +10,6 @@ import numpy as np
 from operator import add
 
 import tkinter
-# import cv2
-# import PIL.Image, PIL.ImageTk
 import math
 
 # Action constants

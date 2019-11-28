@@ -1,5 +1,6 @@
 .vscode/
 *.pyc
+*.pt
 __pycache__/
 gym
 loss.txt
