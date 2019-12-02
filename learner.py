@@ -28,7 +28,7 @@ class Learner() :
     FULLY_RANDOM = 1.0
     
 
-    def __init__( self, model_file, num_iterations, learning_rate ) :
+    def __init__( self, model_file, hidden_sizes, num_iterations, learning_rate ) :
         self.env = gym.make( "VehicleBall-v0", render_mode='human' )
         
         self.num_actions = self.env.action_space.n
@@ -38,7 +38,7 @@ class Learner() :
         self.numInputs = Learner.CONSECUTIVE_FRAME_COUNT * \
                             self.env.observation_space.shape[0] + 1   
 
-        self.mlp = model.Model( self.numInputs, 1, model_file )
+        self.mlp = model.Model( self.numInputs, 1, hidden_sizes, model_file ).to( self.device )
         self.criterion = nn.MSELoss()
         self.optimizer = optim.SGD( self.mlp.parameters(), lr=learning_rate )
 
@@ -71,8 +71,8 @@ class Learner() :
             for i in range( self.BATCH_SIZE ) :
                 inputs[i].append( float(actions[i]) )
 
-            inputs = torch.tensor( inputs )
-            values = torch.tensor( values ).unsqueeze(1)
+            inputs = torch.tensor( inputs, device=self.device )
+            values = torch.tensor( values, device=self.device ).unsqueeze(1)
             loss = self.applyLearning( inputs, values )
 
             print( it, loss )
@@ -131,7 +131,7 @@ class Learner() :
         for i in range( self.CONSECUTIVE_FRAME_COUNT ) :
             frames.extend( self.observations[i + start] )
 
-        state = torch.tensor( frames + [ 0.0 ], dtype=torch.float )
+        state = torch.tensor( frames + [ 0.0 ], dtype=torch.float,device=self.device )
         best_action = 0
         best_value = self.mlp( state ).item()
 
@@ -170,8 +170,8 @@ class Learner() :
                 value_history.extend( values )
 
                 if len(input_history) > self.BATCH_SIZE :
-                    inputs = torch.tensor( input_history )
-                    values = torch.tensor( value_history ).unsqueeze(1)
+                    inputs = torch.tensor( input_history, device=self.device )
+                    values = torch.tensor( value_history, device=self.device ).unsqueeze(1)
                     loss = self.applyLearning( inputs, values )
                     print( it, loss, random_chance )
                     input_history = [] 
