@@ -39,7 +39,6 @@ class Learner() :
                             self.env.observation_space.shape[0] + 1   
 
         self.mlp = model.Model( self.numInputs, 1, hidden_sizes, model_file ).to( self.device )
-        self.criterion = nn.MSELoss()
         self.optimizer = optim.SGD( self.mlp.parameters(), lr=learning_rate )
 
         self.model_file = model_file
@@ -133,11 +132,14 @@ class Learner() :
 
         state = torch.tensor( frames + [ 0.0 ], dtype=torch.float,device=self.device )
         best_action = 0
-        best_value = self.mlp( state ).item()
-
+        output, z, mu, logvar = self.mlp( state )
+        best_value = output.item() 
+        
         for action in range( 1, self.num_actions ) :
             state[ len(frames) ] = float(action)
-            state_value = self.mlp( state ).item()
+            output, _, _, _ = self.mlp( state )
+            state_value = output.item()
+
             if state_value > best_value :
                 best_action = action
                 best_value = state_value
@@ -185,10 +187,11 @@ class Learner() :
 
 
 
-    def applyLearning( self, input, values ) :
-        output = self.mlp( input )
+    def applyLearning( self, inputs, values ) :
+        inputs = inputs + 1.0 / 2.0 
+        output, z, mu, logvar = self.mlp( inputs )
 
-        loss = self.criterion( output, values )
+        loss = self.mlp.loss( output, values, z, inputs, mu, logvar )
 
         self.optimizer.zero_grad()   # zero the gradient buffers
         loss.backward()     # calc gradients

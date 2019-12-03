@@ -22,9 +22,9 @@ if __name__ == "__main__":
         help()
         sys.exit(2)
 
-    num_iterations = 100
+    num_iterations = 20
     model_file = "model.pt"
-    learning_rate = 0.01
+    learning_rate = 0.001
     hidden_sizes = []
 
     for opt, arg in opts:
