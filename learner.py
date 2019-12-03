@@ -123,6 +123,7 @@ class Learner() :
 
     def decide_action( self, start, random_chance=FULLY_RANDOM ) :
 
+
         if random.random() < random_chance :
             return self.env.action_space.sample() 
 
@@ -130,19 +131,20 @@ class Learner() :
         for i in range( self.CONSECUTIVE_FRAME_COUNT ) :
             frames.extend( self.observations[i + start] )
 
-        state = torch.tensor( frames + [ 0.0 ], dtype=torch.float,device=self.device )
         best_action = 0
-        output, z, mu, logvar = self.mlp( state )
-        best_value = output.item() 
-        
-        for action in range( 1, self.num_actions ) :
-            state[ len(frames) ] = float(action)
-            output, _, _, _ = self.mlp( state )
-            state_value = output.item()
+        with torch.no_grad() :
+            state = torch.tensor( frames + [ 0.0 ], dtype=torch.float,device=self.device )
+            output, z, mu, logvar = self.mlp( state )
+            best_value = output.item() 
+            
+            for action in range( 1, self.num_actions ) :
+                state[ len(frames) ] = float(action)
+                output, _, _, _ = self.mlp( state )
+                state_value = output.item()
 
-            if state_value > best_value :
-                best_action = action
-                best_value = state_value
+                if state_value > best_value :
+                    best_action = action
+                    best_value = state_value
 
         return best_action
 

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-ZDIMS = 3
+ZDIMS = 5
 ZHID = 10
 class Model(nn.ModuleDict):
 
@@ -58,7 +58,6 @@ class Model(nn.ModuleDict):
 
     def decode(self, z ):
         return self.decoder( z )
-
 
     def forward(self, x):
         # first pass through VAE
