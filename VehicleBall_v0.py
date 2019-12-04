@@ -395,3 +395,5 @@ def init() :
         max_episode_steps=5000,
     )
 
+# have to init at module load
+init()

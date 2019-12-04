@@ -49,12 +49,9 @@ class Model(nn.ModuleDict):
         return mu, logvar
     
     def reparameterize( self, mu, logvar ) :
-        if self.training:
-            std = torch.exp( logvar * 0.5 )  # type: torch.tensor
-            eps = torch.randn_like( std )
-            return eps * std + mu 
-        else:
-            return mu
+        std = torch.exp( logvar * 0.5 )  # type: torch.tensor
+        eps = torch.randn_like( std )
+        return eps * std + mu 
 
     def decode(self, z ):
         return self.decoder( z )
@@ -63,14 +60,14 @@ class Model(nn.ModuleDict):
         # first pass through VAE
         mu, logvar = self.encode( x )
         mu2 = self.reparameterize(mu, logvar)
-        z = self.decode(mu2)
+        recon_x = self.decode(mu2)
         # Then MLP to get categorization
-        yhat = self.seq( z )
-        return yhat, z, mu, logvar
+        yhat = self.seq( recon_x )
+        return yhat, recon_x, mu, logvar
 
 
-    def loss( self, yhat, y, z, x, mu, logvar ) :
-        BCE = F.binary_cross_entropy(z, x, reduction='sum')
+    def loss( self, yhat, y, recon_x, x, mu, logvar ) :
+        BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
         KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
         # BCE tries to make our reconstruction as accurate as possible
         # KLD tries to push the distributions as close as possible to unit Gaussian

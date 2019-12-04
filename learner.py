@@ -65,14 +65,16 @@ class Learner() :
         self.clear()
 
         for it in range( self.num_iterations ) :
-            inputs, values, actions = self.collect( self.FULLY_RANDOM, self.BATCH_SIZE )
+            x, y, actions = self.collect( self.FULLY_RANDOM, self.BATCH_SIZE )
 
-            for i in range( self.BATCH_SIZE ) :
-                inputs[i].append( float(actions[i]) )
+            if len( x ) == 0 :
+                break
+            for i in range( len(x) ) :
+                x[i].append( float(actions[i]) )
 
-            inputs = torch.tensor( inputs, device=self.device )
-            values = torch.tensor( values, device=self.device ).unsqueeze(1)
-            loss = self.applyLearning( inputs, values )
+            x = torch.tensor( x, device=self.device )
+            y = torch.tensor( y, device=self.device ).unsqueeze(1)
+            loss = self.applyLearning( x, y )
 
             print( it, loss )
 
@@ -86,6 +88,9 @@ class Learner() :
             action = self.decide_action( start, random_chance ) 
             obs, reward, done, _ = self.env.step( action ) 
 
+            # for BCE loss we need inputs normalized 0 .. 1
+            obs = list( map( lambda o : o + 1.0 / 2.0, obs ) )
+
             # previous_obs | action => obs | reward
             self.observations.append( obs ) 
             self.rewards.append( reward ) 
@@ -94,7 +99,7 @@ class Learner() :
 
 
 
-    def collect( self, random_chance, num_steps ) :
+    def collect( self, random_chance, num_steps=1 ) :
         self.step( random_chance, num_steps )
 
         values = [] 
@@ -112,18 +117,21 @@ class Learner() :
 
         actions = self.actions[ 0:num_steps ]
 
+        try :
+            n = self.dones.index( True )
+        except ValueError :
+            n = num_steps 
+
         del self.observations[0:num_steps]
         del self.rewards[0:num_steps]
         del self.actions[0:num_steps]
         del self.dones[0:num_steps]
 
-        return inputs, values, actions
+        return inputs[0:n], values[0:n], actions[0:n]
 
 
 
     def decide_action( self, start, random_chance=FULLY_RANDOM ) :
-
-
         if random.random() < random_chance :
             return self.env.action_space.sample() 
 
@@ -134,13 +142,13 @@ class Learner() :
         best_action = 0
         with torch.no_grad() :
             state = torch.tensor( frames + [ 0.0 ], dtype=torch.float,device=self.device )
-            output, z, mu, logvar = self.mlp( state )
-            best_value = output.item() 
+            yhat, recon_x, mu, logvar = self.mlp( state )
+            best_value = yhat.item() 
             
             for action in range( 1, self.num_actions ) :
                 state[ len(frames) ] = float(action)
-                output, _, _, _ = self.mlp( state )
-                state_value = output.item()
+                yhat, _, _, _ = self.mlp( state )
+                state_value = yhat.item()
 
                 if state_value > best_value :
                     best_action = action
@@ -165,10 +173,11 @@ class Learner() :
             input_history = [] 
             value_history = []
             for stp in range(5000) :
-                inputs, values, actions = self.collect( random_chance, 1 )
+                inputs, values, actions = self.collect( random_chance )
+                if len(inputs) == 0 :
+                    break # we're done !
 
-                for i in range( 1 ) :
-                    inputs[i].append( float(actions[i]) )
+                inputs[0].append( float(actions[0]) )
                 # Add new observation to end & 'forget' the oldest observation 
                 input_history.extend( inputs )
                 value_history.extend( values )
@@ -189,17 +198,17 @@ class Learner() :
 
 
 
-    def applyLearning( self, inputs, values ) :
-        inputs = inputs + 1.0 / 2.0 
-        output, z, mu, logvar = self.mlp( inputs )
+    def applyLearning( self, x, y ) :
 
-        loss = self.mlp.loss( output, values, z, inputs, mu, logvar )
+        yhat, recon_x, mu, logvar = self.mlp( x )
 
-        self.optimizer.zero_grad()   # zero the gradient buffers
-        loss.backward()     # calc gradients
-        self.optimizer.step()    # update weights
+        loss = self.mlp.loss( yhat, y, recon_x, x, mu, logvar )
 
-        return loss.item() if loss else None
+        self.optimizer.zero_grad()  # zero the gradient buffers
+        loss.backward()             # calc gradients
+        self.optimizer.step()       # update weights
+
+        return loss.item()
 
 
     def photo( self ) :
@@ -214,8 +223,4 @@ class Learner() :
             value = value * gamma + rewards[ix]
 
         return value 
-
-
-# have to init at module load
-VehicleBall_v0.init()
  
