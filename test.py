@@ -4,15 +4,15 @@ import sys, getopt
 import learner
 
 
-def main(model_file, hidden_sizes, num_iterations, learning_rate):
-    l = learner.Learner(model_file, hidden_sizes, num_iterations, learning_rate)
+def main(model_file_prefix, hidden_sizes, num_iterations, learning_rate):
+    l = learner.Learner(model_file_prefix, hidden_sizes, num_iterations, learning_rate)
 
     l.learn()
     l.exploit()
 
 
 def help():
-    print('test.py -f model file -i num_iterations -l learning_rate')
+    print('test.py -f "model file prefix" -i num_iterations -l learning_rate -s 1 -s 2 -s 3')
 
 
 if __name__ == "__main__":
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         sys.exit(2)
 
     num_iterations = 20
-    model_file = "model.pt"
+    model_file_prefix = "params"
     learning_rate = 0.001
     hidden_sizes = []
 
@@ -41,5 +41,6 @@ if __name__ == "__main__":
             learning_rate = float(arg)
 
     if len(hidden_sizes) == 0:
-        hidden_sizes = [48, 96, 128, 64, 16]
+        hidden_sizes = [48, 96, 64, 16]
+
     main(model_file, hidden_sizes, num_iterations, learning_rate)

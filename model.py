@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 class Model(nn.ModuleDict):
 
-    def __init__(self, num_inputs, num_outputs, hidden_sizes, model_file):
+    def __init__(self, num_inputs, num_outputs, hidden_sizes, model_file_prefix):
         super(Model, self).__init__()
 
         # MLP section
@@ -21,7 +21,7 @@ class Model(nn.ModuleDict):
 
         layers.append(nn.Linear(h, num_outputs))
         self.seq = nn.Sequential(*layers)
-        self.model_file = model_file
+        self.model_file = model_file_prefix + "-mlp.pt"
         self.criterion = nn.MSELoss()
 
     def forward(self, x):
@@ -35,7 +35,7 @@ class Model(nn.ModuleDict):
         torch.save(self.state_dict(), self.model_file)
 
     @staticmethod
-    def load(file="model.pt"):
+    def load(file):
         this = Model(model_file=file)
         this.load_state_dict(torch.load(file))
         return this
@@ -43,7 +43,7 @@ class Model(nn.ModuleDict):
 
 class VAE(nn.ModuleDict):
 
-    def __init__(self, num_inputs, ZDIMS=5, ZHID=10, model_file="vae.pt"):
+    def __init__(self, num_inputs, ZDIMS, ZHID, model_file_prefix ):
         super(VAE, self).__init__()
 
         # VAE section
@@ -62,8 +62,7 @@ class VAE(nn.ModuleDict):
             nn.Sigmoid()
         )
 
-        self.model_file = model_file
-
+        self.model_file = model_file_prefix + "-vae.pt"
     def encode(self, x):
         h1 = self.encoder(x)
         mu = self.encoderMu(h1)
@@ -96,7 +95,7 @@ class VAE(nn.ModuleDict):
         torch.save(self.state_dict(), self.model_file)
 
     @staticmethod
-    def load(file="vae.pt"):
+    def load(file):
         this = Model(model_file=file)
         this.load_state_dict(torch.load(file))
         return this

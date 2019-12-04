@@ -17,7 +17,7 @@ class Learner:
     CONSECUTIVE_FRAME_COUNT = 4
     FULLY_RANDOM = 1.0
 
-    def __init__(self, model_file, hidden_sizes, num_iterations, learning_rate):
+    def __init__(self, model_file_prefix, hidden_sizes, num_iterations, learning_rate):
         self.env = gym.make("VehicleBall-v0", render_mode='human')
 
         self.num_actions = self.env.action_space.n
@@ -27,14 +27,20 @@ class Learner:
         self.numInputs = Learner.CONSECUTIVE_FRAME_COUNT * \
                          self.env.observation_space.shape[0] + 1
 
-        self.vae = model.VAE(self.numInputs, ZDIMS=5, ZHID=10).to(self.device)
-        self.optimizer_vae = optim.SGD(self.vae.parameters(), lr=learning_rate)
+        self.vae = model.VAE(self.numInputs, 5, 10, model_file_prefix).to(self.device)
+        self.optimizer_vae = optim.SGD(self.vae.parameters(), lr=learning_rate*10.0)
 
-        self.mlp = model.Model(self.numInputs, 1, hidden_sizes, model_file).to(self.device)
+        self.mlp = model.Model(self.numInputs, 1, hidden_sizes, model_file_prefix).to(self.device)
         self.optimizer_mlp = optim.SGD(self.mlp.parameters(), lr=learning_rate)
 
         self.model_file = model_file
         self.num_iterations = num_iterations
+
+        #  state of the model
+        self.rewards = []
+        self.observations = []
+        self.actions = []
+        self.dones = []
 
         self.clear()
 
@@ -42,10 +48,10 @@ class Learner:
         obs = self.env.reset()
 
         #  Reset state of the model
-        self.rewards = []
-        self.observations = []
-        self.actions = []
-        self.dones = []
+        self.rewards.clear()
+        self.observations.clear()
+        self.actions.clear()
+        self.dones.clear()
 
         for _ in range(self.CONSECUTIVE_FRAME_COUNT):
             self.observations.append(obs)
@@ -75,7 +81,8 @@ class Learner:
             action = self.decide_action(start, random_chance)
             obs, reward, done, _ = self.env.step(action)
 
-            # for BCE loss we need inputs normalized 0 .. 1
+            # for BCE loss we need inputs normalized 0.0 .. 1.0
+            # instead of -1.0 .. 1.0
             obs = list(map(lambda o: o + 1.0 / 2.0, obs))
 
             # previous_obs | action => obs | reward
@@ -83,6 +90,7 @@ class Learner:
             self.rewards.append(reward)
             self.actions.append(action)
             self.dones.append(done)
+
 
     def collect(self, random_chance, num_steps=1):
         self.step(random_chance, num_steps)

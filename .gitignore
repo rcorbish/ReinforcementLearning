@@ -1,9 +1,9 @@
 .vscode/
+.idea/
+results/
+__pycache__/
 *.pyc
 *.pt
-__pycache__/
-gym
-loss.txt
 *.bak
-test2.py
+gym
 

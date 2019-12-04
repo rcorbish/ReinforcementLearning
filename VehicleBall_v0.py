@@ -306,7 +306,7 @@ class VehicleBallEnvSpec( gym.Env ) :
             dist = clamp( ball.distance_to_vehicle, 0, 20 ) / 20.0
             state.append( dist if in_front else -dist )
 
-        if self.mode == 'human' and (self.frame & 31 == 0) :
+        if self.mode == 'human' and (self.frame & 0x1f == 0) :
             if self.text :
                 p.removeAllUserDebugItems()
 
