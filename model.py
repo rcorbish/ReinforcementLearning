@@ -78,7 +78,7 @@ class VAE(nn.ModuleDict):
         return self.decoder(z)
 
     def forward(self, x):
-        # pass through VAE
+        # pass through VAE - encode then decode
         mu, log_var = self.encode(x)
         mu2 = self.reparameterize(mu, log_var)
         recon_x = self.decode(mu2)

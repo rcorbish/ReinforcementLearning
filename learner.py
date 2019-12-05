@@ -28,12 +28,11 @@ class Learner:
                          self.env.observation_space.shape[0] + 1
 
         self.vae = model.VAE(self.numInputs, 5, 10, model_file_prefix).to(self.device)
-        self.optimizer_vae = optim.SGD(self.vae.parameters(), lr=learning_rate*10.0)
+        self.optimizer_vae = optim.Adam(self.vae.parameters(), lr=learning_rate)
 
         self.mlp = model.Model(self.numInputs, 1, hidden_sizes, model_file_prefix).to(self.device)
         self.optimizer_mlp = optim.SGD(self.mlp.parameters(), lr=learning_rate)
 
-        self.model_file = model_file
         self.num_iterations = num_iterations
 
         #  state of the model
@@ -185,21 +184,25 @@ class Learner:
 
             iterations = iterations - (0 if always else 1)
             self.mlp.save()
+            self.vae.save()
 
     def apply_learning(self, x, y):
 
+        # pass state through VAE
         recon_x, mu, log_var = self.vae(x)
         loss_vae = self.vae.loss(recon_x, x, mu, log_var)
         self.optimizer_vae.zero_grad()  # zero the gradient buffers
         loss_vae.backward()  # calc gradients
         self.optimizer_vae.step()  # update weights
 
+        # pass state through MLP
         y_hat = self.mlp(x)
         loss_mlp = self.mlp.loss(y, y_hat)
         self.optimizer_mlp.zero_grad()  # zero the gradient buffers
         loss_mlp.backward()  # calc gradients
         self.optimizer_mlp.step()  # update weights
 
+        # loss is separate for each model
         return loss_mlp.item(), loss_vae.item()
 
     def photo(self):

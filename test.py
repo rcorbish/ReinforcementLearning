@@ -32,7 +32,7 @@ if __name__ == "__main__":
             help()
             sys.exit()
         elif opt in ("-f", "--file"):
-            model_file = arg
+            model_file_prefix = arg
         elif opt in ("-s", "--hidden"):
             hidden_sizes.append(int(arg))
         elif opt in ("-i"):
@@ -43,4 +43,4 @@ if __name__ == "__main__":
     if len(hidden_sizes) == 0:
         hidden_sizes = [48, 96, 64, 16]
 
-    main(model_file, hidden_sizes, num_iterations, learning_rate)
+    main(model_file_prefix, hidden_sizes, num_iterations, learning_rate)
