@@ -30,7 +30,7 @@ class Learner:
         self.vae = model.VAE(self.numInputs, 5, 10, model_file_prefix).to(self.device)
         self.optimizer_vae = optim.Adam(self.vae.parameters(), lr=learning_rate)
 
-        self.mlp = model.Model(self.numInputs, 1, hidden_sizes, model_file_prefix).to(self.device)
+        self.mlp = model.MLP(self.numInputs, 1, hidden_sizes, model_file_prefix).to(self.device)
         self.optimizer_mlp = optim.SGD(self.mlp.parameters(), lr=learning_rate)
 
         self.num_iterations = num_iterations
@@ -172,13 +172,13 @@ class Learner:
                 if len(input_history) > self.BATCH_SIZE:
                     inputs = torch.tensor(input_history, device=self.device)
                     values = torch.tensor(value_history, device=self.device).unsqueeze(1)
-                    loss_mlp, loss_vae = self.apply_learning(inputs, values)
-                    print(it, loss_mlp, loss_vae, random_chance)
+                    loss = self.apply_learning(inputs, values)
+                    print(it, loss, random_chance)
                     input_history = []
                     value_history = []
 
-                if (stp & 63) == 0:
-                    self.photo()
+                # if (stp & 63) == 0:
+                #     self.photo()
 
             iterations = iterations - (0 if always else 1)
             self.mlp.save()
@@ -187,11 +187,11 @@ class Learner:
     def apply_learning(self, x, y):
 
         # pass state through VAE
-        recon_x, mu, log_var = self.vae(x)
-        loss_vae = self.vae.loss(recon_x, x, mu, log_var)
-        self.optimizer_vae.zero_grad()  # zero the gradient buffers
-        loss_vae.backward()  # calc gradients
-        self.optimizer_vae.step()  # update weights
+        # recon_x, mu, log_var = self.vae(x)
+        # loss_vae = self.vae.loss(recon_x, x, mu, log_var)
+        # self.optimizer_vae.zero_grad()  # zero the gradient buffers
+        # loss_vae.backward()  # calc gradients
+        # self.optimizer_vae.step()  # update weights
 
         # pass state through MLP
         y_hat = self.mlp(x)
@@ -201,7 +201,7 @@ class Learner:
         self.optimizer_mlp.step()  # update weights
 
         # loss is separate for each model
-        return loss_mlp.item(), loss_vae.item()
+        return loss_mlp.item() #, loss_vae.item()
 
     def photo(self):
         self.env.render()
