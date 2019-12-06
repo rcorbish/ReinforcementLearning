@@ -82,14 +82,12 @@ class Learner:
 
             # for BCE loss we need inputs normalized 0.0 .. 1.0
             # instead of -1.0 .. 1.0
-            obs = list(map(lambda o: o + 1.0 / 2.0, obs))
+            # obs = list(map(lambda o: o + 1.0 / 2.0, obs))
 
-            # previous_obs | action => obs | reward
             self.observations.append(obs)
             self.rewards.append(reward)
             self.actions.append(action)
             self.dones.append(done)
-
 
     def collect(self, random_chance, num_steps=1):
         self.step(random_chance, num_steps)

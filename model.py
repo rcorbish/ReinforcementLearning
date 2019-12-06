@@ -61,8 +61,9 @@ class VAE(nn.ModuleDict):
             nn.Linear(ZHID, num_inputs),
             nn.Sigmoid()
         )
-
+        self.criterion = nn.MSELoss()
         self.model_file = model_file_prefix + "-vae.pt"
+
     def encode(self, x):
         h1 = self.encoder(x)
         mu = self.encoderMu(h1)
@@ -85,11 +86,11 @@ class VAE(nn.ModuleDict):
         return recon_x, mu, log_var
 
     def loss(self, recon_x, x, mu, log_var):
-        BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
+        MSE = self.criterion(recon_x, x)
         KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
         # BCE tries to make our reconstruction as accurate as possible
         # KLD tries to push the distributions as close as possible to unit Gaussian
-        return BCE + KLD
+        return MSE + KLD
 
     def save(self):
         torch.save(self.state_dict(), self.model_file)
